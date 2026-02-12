@@ -1,0 +1,107 @@
+﻿<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>モビーを使って飲みまくろう！</title>
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <header class="top">
+    <h1>モビーを使って飲みまくろう！</h1>
+    <p class="sub">参加者がタイプを選び、選ばれたカードだけで山札を作って引く</p>
+  </header>
+
+  <main class="layout">
+    <!-- LEFT: setup -->
+    <section class="panel">
+      <h2>1) 参加者</h2>
+
+      <div class="row">
+        <input id="countInput" type="number" min="1" step="1" placeholder="参加人数" />
+        <button id="setCountBtn" class="btn">人数を設定</button>
+      </div>
+
+      <div class="row small">
+        <button id="clearBtn" class="btn ghost">全削除</button>
+        <label class="check">
+          <input id="allowDuplicates" type="checkbox" checked />
+          同タイプ複数人OK（人数分だけカードを入れる）
+        </label>
+      </div>
+
+      <div class="listWrap">
+        <h3>参加者一覧</h3>
+        <ul id="participantList" class="list"></ul>
+      </div>
+
+      <hr />
+
+      <h2>2) 山札</h2>
+      <div class="row">
+        <button id="buildDeckBtn" class="btn primary">山札を作成</button>
+        <button id="shuffleBtn" class="btn ghost" disabled>シャッフル</button>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="label">山札枚数</div>
+          <div id="deckCount" class="value">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">残り</div>
+          <div id="deckRemain" class="value">0</div>
+        </div>
+      </div>
+
+      <p class="hint">
+        ※ 先に参加人数を設定し、各参加者がタイプを選択します。<br />
+        ※ 山札 = 「参加者のタイプ」だけで構成。<br />
+        ※ 同タイプ複数人OKなら、人数分だけ同じカードが入る（確率は枚数に比例）。
+        <br />※ 4回に1回イベントカードが混ざります。
+      </p>
+    </section>
+
+    <!-- RIGHT: draw -->
+    <section class="panel">
+      <h2>3) 引く</h2>
+
+      <div class="drawArea">
+        <div class="pile">
+          <div id="pileCard" class="pileCard" title="山札"></div>
+          <div class="pileMeta">
+            <div class="pileTitle">山札</div>
+            <div id="pileInfo" class="pileInfo">まだ作成されていません</div>
+          </div>
+        </div>
+
+        <div class="arrow">→</div>
+
+        <div class="drawn">
+          <div class="drawnTitle">引いたカード</div>
+          <div id="drawnCard" class="cardPreview empty">
+            <div class="emptyText">まだ引いていません</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <button id="drawBtn" class="btn primary" disabled>1枚引く</button>
+        <button id="resetDrawBtn" class="btn ghost" disabled>表示リセット</button>
+      </div>
+
+      <div class="historyWrap">
+        <h3>履歴</h3>
+        <ol id="history" class="history"></ol>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <small>画像差し替え: assets/cards/ に m01..m16 / f01..f16 を置く</small>
+  </footer>
+
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>
+
