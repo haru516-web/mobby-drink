@@ -29,6 +29,42 @@ body{
   font-family: "Yusei Magic","Mochiy Pop P One","Hiragino Maru Gothic ProN","Meiryo", sans-serif;
   position:relative;
 }
+
+.topTabs{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+}
+.tabBtn{
+  border:2px solid #ffd0e8;
+  background:#fff;
+  color:#b85a8c;
+  border-radius:999px;
+  padding:6px 12px;
+  font-weight:800;
+  cursor:pointer;
+  box-shadow: 0 6px 12px rgba(255,47,177,.10);
+}
+.tabBtn.active{
+  border-color:#ff2fb1;
+  color:#fff;
+  background: linear-gradient(135deg, #ff2fb1, #ffd24a);
+  box-shadow: 0 8px 16px rgba(255,47,177,.22);
+}
+
+.soundGrid{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:10px;
+  margin-top:8px;
+}
+@media (max-width: 520px){
+  .soundGrid{grid-template-columns:1fr}
+}
+.soundBtn{
+  width:100%;
+  text-align:center;
+}
 body::before{
   content:"";
   position:fixed;
@@ -100,6 +136,28 @@ body::before{
   position:relative;
   overflow:hidden;
 }
+.appStage.isHidden{
+  display:none;
+}
+.panel.isHidden{
+  display:none;
+}
+.panelHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.smallBtn{
+  padding:6px 10px;
+  font-size:12px;
+}
+.collapsible{
+  display:block;
+}
+.collapsible.isClosed{
+  display:none;
+}
 .panel::before{
   content:"";
   position:absolute;
@@ -158,6 +216,7 @@ h3{margin:14px 0 8px;font-size:13px;color:var(--muted);font-weight:700;letter-sp
   margin:10px 0;
 }
 .row.small{gap:12px; margin-top:6px}
+.startRow{justify-content:flex-start}
 
 input, select{
   background:#fff;
@@ -233,6 +292,9 @@ select{flex:1; min-width:160px}
   position:relative;
   overflow:hidden;
 }
+.historyWrap{
+  margin-top:10px;
+}
 .listWrap::after, .historyWrap::after{
   content:"";
   position:absolute;
@@ -260,6 +322,10 @@ select{flex:1; min-width:160px}
   gap:10px;
   padding:8px 8px;
   border-bottom:1px dashed rgba(255,255,255,.06);
+}
+.list .participantItem{
+  display:block;
+  justify-content:flex-start;
 }
 .emptyRow{
   color:var(--muted);
@@ -293,6 +359,15 @@ select{flex:1; min-width:160px}
   align-items:center;
   gap:10px;
   margin-top:8px;
+}
+.cupInline{
+  font-size:14px;
+  font-weight:800;
+  color:#ff2fb1;
+  background:#fff0f8;
+  border:2px solid #ffd0e8;
+  border-radius:999px;
+  padding:2px 10px;
 }
 .listLeft{
   display:flex;
@@ -353,6 +428,12 @@ select{flex:1; min-width:160px}
 
 .hint{
   margin:10px 0 0;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.5;
+}
+.hintBox{
+  margin:12px 0 0;
   color:var(--muted);
   font-size:12px;
   line-height:1.5;
@@ -511,6 +592,16 @@ hr{
   display:flex;
   align-items:center;
   gap:10px;
+}
+.historyRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.historyName{
+  min-width: 0;
+  font-weight:700;
+  color:var(--text);
 }
 .countBadge{
   font-weight:800;

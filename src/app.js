@@ -7,6 +7,15 @@ const setCountBtn = $("#setCountBtn");
 const clearBtn = $("#clearBtn");
 const allowDuplicates = $("#allowDuplicates");
 const participantList = $("#participantList");
+const participantPanel = $("#participantPanel");
+const startBtn = $("#startBtn");
+const appStage = document.querySelector(".appStage");
+const panelParticipants = $("#panelParticipants");
+const panelDraw = $("#panelDraw");
+const panelSound = $("#panelSound");
+const tabParticipants = $("#tabParticipants");
+const tabDraw = $("#tabDraw");
+const tabSound = $("#tabSound");
 
 const buildDeckBtn = $("#buildDeckBtn");
 const shuffleBtn = $("#shuffleBtn");
@@ -31,6 +40,7 @@ const EVENT_TYPES = [
   { id: "favtype", kind: "single" },
   { id: "game", kind: "single" },
   { id: "drink", kind: "pair" },
+  { id: "all", kind: "all" },
 ];
 
 // ------------------ init ------------------
@@ -74,11 +84,11 @@ function shuffleInPlace(arr) {
 }
 
 function updateStats() {
-  deckCount.textContent = String(deck.length);
-  deckRemain.textContent = String(deck.length);
-  pileInfo.textContent = "";
+  if (deckCount) deckCount.textContent = String(deck.length);
+  if (deckRemain) deckRemain.textContent = String(deck.length);
+  if (pileInfo) pileInfo.textContent = "";
 
-  shuffleBtn.disabled = deck.length === 0;
+  if (shuffleBtn) shuffleBtn.disabled = deck.length === 0;
   drawBtn.disabled = deck.length === 0;
   resetDrawBtn.disabled = !drawn;
 }
@@ -94,8 +104,10 @@ function renderParticipants() {
   }
   participants.forEach((p, idx) => {
     const t = TYPE_MAP.get(p.typeId);
+    const cupCount = p.typeId ? counts.get(p.typeId) || 0 : 0;
     const li = document.createElement("li");
     li.className = "participantItem";
+    li.dataset.pid = p.id;
 
     const head = document.createElement("div");
     head.className = "participantHead";
@@ -144,19 +156,40 @@ function renderParticipants() {
     thumb.src = t?.img || "";
     thumb.alt = t?.label || "未選択";
 
-    const meta = document.createElement("div");
-    meta.innerHTML = `
-      <div class="title">${t ? `${t.label} (${t.id.toUpperCase()})` : "未選択"}</div>
-      <div class="tag">${t ? (t.group === "female" ? "女子" : "男子") : "タイプを選択してください"}</div>
-    `;
+    const cup = document.createElement("span");
+    cup.className = "cupInline";
+    cup.textContent = p.typeId ? `×${cupCount}` : "";
 
     body.appendChild(thumb);
-    body.appendChild(meta);
+    body.appendChild(cup);
 
     li.appendChild(head);
     li.appendChild(body);
     participantList.appendChild(li);
   });
+}
+
+function setParticipantPanelOpen(isOpen) {
+  if (!participantPanel) return;
+  participantPanel.classList.toggle("isClosed", !isOpen);
+}
+
+function setStageVisible(isVisible) {
+  if (!appStage) return;
+  appStage.classList.toggle("isHidden", !isVisible);
+}
+
+function setActiveTab(tab) {
+  if (tabParticipants) tabParticipants.classList.toggle("active", tab === "participants");
+  if (tabDraw) tabDraw.classList.toggle("active", tab === "draw");
+  if (tabSound) tabSound.classList.toggle("active", tab === "sound");
+}
+
+function showPanel(tab) {
+  if (panelParticipants) panelParticipants.classList.toggle("isHidden", tab !== "participants");
+  if (panelDraw) panelDraw.classList.toggle("isHidden", tab !== "draw");
+  if (panelSound) panelSound.classList.toggle("isHidden", tab !== "sound");
+  setActiveTab(tab);
 }
 
 function escapeHtml(str) {
@@ -171,18 +204,12 @@ function escapeHtml(str) {
 function setDrawnCard(typeId) {
   const t = TYPE_MAP.get(typeId);
   drawn = { kind: "type", typeId };
-  const names = participants
-    .filter((p) => p.typeId === typeId)
-    .map((p) => p.name?.trim() || "名無し")
-    .join(" / ");
-  const nameText = names || "名無し";
-
   drawnCard.classList.remove("empty");
   drawnCard.classList.remove("event");
   drawnCard.innerHTML = `
     <img src="${t?.img || ""}" alt="${t?.label || typeId}" />
     <div class="meta">
-      <div class="type">${t ? `${escapeHtml(t.label)} / ${escapeHtml(nameText)}` : escapeHtml(nameText)}</div>
+      <div class="type">${t ? `${escapeHtml(t.label)}` : ""}</div>
     </div>
   `;
 
@@ -224,6 +251,9 @@ function setDrawnEvent() {
       sentence = `${n1}と${n2}は一緒にグイ`;
     }
     drawn = { kind: "event", eventId: evt.id, names: [name1, name2] };
+  } else if (evt.kind === "all") {
+    sentence = "全員でグイ";
+    drawn = { kind: "event", eventId: evt.id, names: [] };
   } else {
     const name = pickOneParticipant();
     const n1 = `${name}さん`;
@@ -264,6 +294,10 @@ function triggerFlip() {
 }
 
 function renderCounts() {
+  if (!history) {
+    updateParticipantCardCounts();
+    return;
+  }
   history.innerHTML = "";
   const entries = Array.from(counts.entries())
     .filter(([, c]) => c > 0)
@@ -285,14 +319,15 @@ function renderCounts() {
       .join(" / ");
     const li = document.createElement("li");
     li.innerHTML = `
-      <div class="historyItem">
+      <div class="historyRow">
+        <span class="historyName">${names || "名無し"}</span>
         <img class="thumb" src="${t?.img || ""}" alt="${t?.label || typeId}" />
-        <span>${names || "名無し"}</span>
       </div>
       <span class="countBadge">×${c}</span>
     `;
     history.appendChild(li);
   });
+  updateParticipantCardCounts();
 }
 
 function resetCounts() {
@@ -331,6 +366,22 @@ function setParticipantCount(n) {
   updateStats();
 }
 
+function updateParticipantCardCounts() {
+  if (!participantList) return;
+  participants.forEach((p) => {
+    const row = participantList.querySelector(`[data-pid="${p.id}"]`);
+    if (!row) return;
+    const valueEl = row.querySelector(".cupInline");
+    if (!valueEl) return;
+    if (!p.typeId) {
+      valueEl.textContent = "";
+      return;
+    }
+    const c = counts.get(p.typeId) || 0;
+    valueEl.textContent = `×${c}`;
+  });
+}
+
 // ------------------ actions ------------------
 function drawOneCard() {
   if (deck.length === 0) return;
@@ -345,7 +396,7 @@ function drawOneCard() {
   }
   triggerFlip();
 
-  deckRemain.textContent = String(deck.length);
+  if (deckRemain) deckRemain.textContent = String(deck.length);
 
   if (deck.length === 0) {
     pileInfo.textContent = "山札がなくなりました";
@@ -385,7 +436,14 @@ allowDuplicates.addEventListener("change", () => {
   }
 });
 
-buildDeckBtn.addEventListener("click", () => {
+setParticipantPanelOpen(true);
+
+// initial stage hidden until start
+setStageVisible(false);
+showPanel("participants");
+
+if (buildDeckBtn) buildDeckBtn.addEventListener("click", () => {
+  // legacy button (if present)
   if (participants.length === 0) {
     alert("参加人数を設定してください");
     return;
@@ -397,7 +455,8 @@ buildDeckBtn.addEventListener("click", () => {
   }
 
   // 山札は固定50枚。参加者のタイプを確率的に引いて生成（復元抽選）
-  const pool = participants.map((p) => p.typeId);
+  // 同じタイプが複数いても、タイプの出現確率は均等にする
+  const pool = Array.from(new Set(participants.map((p) => p.typeId)));
   const normalDeck = Array.from({ length: 50 }, () => {
     const idx = Math.floor(Math.random() * pool.length);
     return { kind: "type", typeId: pool[idx] };
@@ -420,11 +479,112 @@ buildDeckBtn.addEventListener("click", () => {
   updateStats();
 });
 
-shuffleBtn.addEventListener("click", () => {
-  if (deck.length === 0) return;
-  shuffleInPlace(deck);
-  pileInfo.textContent = `シャッフルしました（${deck.length}枚）`;
+function buildDeckAndStart() {
+  if (participants.length === 0) {
+    alert("参加人数を設定してください");
+    return false;
+  }
+  const hasEmpty = participants.some((p) => !p.typeId);
+  if (hasEmpty) {
+    alert("未選択の参加者があります");
+    return false;
+  }
+
+  const pool = Array.from(new Set(participants.map((p) => p.typeId)));
+  const normalDeck = Array.from({ length: 50 }, () => {
+    const idx = Math.floor(Math.random() * pool.length);
+    return { kind: "type", typeId: pool[idx] };
+  });
+
+  shuffleInPlace(normalDeck);
+
+  const mixed = [];
+  for (let i = 0; i < normalDeck.length; i += 1) {
+    mixed.push(normalDeck[i]);
+    if ((i + 1) % (EVENT_EVERY - 1) === 0) {
+      mixed.push({ kind: "event" });
+    }
+  }
+  deck = mixed;
+
+  resetCounts();
+  resetDrawnView();
+  updateStats();
+  if (pileInfo) pileInfo.textContent = `山札をセットしました（${deck.length}枚）`;
+  return true;
+}
+
+if (startBtn) {
+  startBtn.addEventListener("click", () => {
+    const ok = buildDeckAndStart();
+    if (!ok) return;
+    setStageVisible(true);
+    setParticipantPanelOpen(false);
+    showPanel("draw");
+  });
+}
+
+if (tabParticipants) {
+  tabParticipants.addEventListener("click", () => {
+    showPanel("participants");
+  });
+}
+if (tabDraw) {
+  tabDraw.addEventListener("click", () => {
+    showPanel("draw");
+  });
+}
+if (tabSound) {
+  tabSound.addEventListener("click", () => {
+    showPanel("sound");
+  });
+}
+
+// sound buttons
+const SOUND_MAP = {
+  shuden: "./assets/audio/終電.mp3",
+  s2: "./assets/audio/朝まで飲んじゃおっかー.mp3",
+  s3: "./assets/audio/酔っぱらっちゃった.mp3",
+  s4: "./assets/audio/終電.mp3",
+  s5: "./assets/audio/終電.mp3",
+  s6: "./assets/audio/終電.mp3",
+  s7: "./assets/audio/終電.mp3",
+  s8: "./assets/audio/終電.mp3",
+};
+const soundCache = new Map();
+let currentAudio = null;
+document.querySelectorAll(".soundBtn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const key = btn.dataset.sound;
+    const src = SOUND_MAP[key];
+    if (!src) return;
+    let audio = soundCache.get(src);
+    if (!audio) {
+      audio = new Audio(src);
+      soundCache.set(src, audio);
+    }
+    if (currentAudio === audio && !audio.paused) {
+      audio.pause();
+      audio.currentTime = 0;
+      return;
+    }
+    if (currentAudio && currentAudio !== audio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
+    currentAudio = audio;
+    audio.currentTime = 0;
+    audio.play();
+  });
 });
+
+if (shuffleBtn) {
+  shuffleBtn.addEventListener("click", () => {
+    if (deck.length === 0) return;
+    shuffleInPlace(deck);
+    if (pileInfo) pileInfo.textContent = `シャッフルしました（${deck.length}枚）`;
+  });
+}
 
 drawBtn.addEventListener("click", () => {
   drawOneCard();
@@ -472,6 +632,54 @@ if (pileCard) {
 
   pileCard.addEventListener("pointerup", endSwipe);
   pileCard.addEventListener("pointercancel", () => {
+    swipeActive = false;
+    swipeStart = null;
+    pileCard.classList.remove("swiping");
+  });
+
+  // Fallback for browsers without reliable pointer events (e.g., some mobile Safari)
+  const getTouchPoint = (evt) => {
+    const t = evt.changedTouches?.[0] || evt.touches?.[0];
+    if (!t) return null;
+    return { x: t.clientX, y: t.clientY };
+  };
+
+  pileCard.addEventListener("touchstart", (e) => {
+    if (deck.length === 0) return;
+    const p = getTouchPoint(e);
+    if (!p) return;
+    swipeStart = p;
+    swipeActive = true;
+    pileCard.classList.add("swiping");
+  }, { passive: true });
+
+  pileCard.addEventListener("touchmove", (e) => {
+    if (!swipeActive || !swipeStart) return;
+    const p = getTouchPoint(e);
+    if (!p) return;
+    const dx = p.x - swipeStart.x;
+    const dy = p.y - swipeStart.y;
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  pileCard.addEventListener("touchend", (e) => {
+    if (!swipeActive || !swipeStart) return;
+    const p = getTouchPoint(e);
+    if (!p) return;
+    const dx = p.x - swipeStart.x;
+    const dy = p.y - swipeStart.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > 40) {
+      drawOneCard();
+    }
+    swipeActive = false;
+    swipeStart = null;
+    pileCard.classList.remove("swiping");
+  });
+
+  pileCard.addEventListener("touchcancel", () => {
     swipeActive = false;
     swipeStart = null;
     pileCard.classList.remove("swiping");
